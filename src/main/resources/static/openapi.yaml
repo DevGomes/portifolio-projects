@@ -1,0 +1,344 @@
+openapi: 3.0.4
+info:
+  title: Gerenciador de Portifolio - OpenAPI 3.0.4
+  description: |-
+    Esse é um CRUD de Gerenciador de Portifolio.
+
+  contact:
+    email: onerbbreno@gmail.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.12
+externalDocs:
+  description: Find out more about Swagger
+  url: https://swagger.io
+
+tags:
+  - name: project
+    description: CRUD para gerenciar os projetos do portfólio
+    externalDocs:
+      description: Find out more
+      url: https://swagger.io
+
+paths:
+  /project:
+    get:
+      tags:
+        - project
+      summary: Lista todos os projetos
+      description: Retorna uma lista de todos os projetos cadastrados.
+      operationId: listProjects
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectResponse'
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - project
+      summary: Cria um novo projeto
+      description: Adiciona um novo projeto ao portfólio.
+      operationId: createProject
+      requestBody:
+        description: Dados do novo projeto
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+        required: true
+      responses:
+        '201':
+          description: Projeto criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Dados inválidos fornecidos
+        '422':
+          description: Exceção de validação
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /project/{id}:
+    get:
+      tags:
+        - project
+      summary: Busca projeto por ID
+      description: Retorna um único projeto pelo seu ID.
+      operationId: getProjectById
+      parameters:
+        - name: id
+          in: path
+          description: ID do projeto a ser buscado
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Operação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: ID fornecido inválido
+        '404':
+          description: Projeto não encontrado
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - project
+      summary: Atualiza um projeto
+      description: Atualiza um projeto existente pelo seu Id.
+      operationId: updateProject
+      parameters:
+        - name: id
+          in: path
+          description: ID do projeto a ser atualizado
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Dados atualizados do projeto
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequest'
+        required: true
+      responses:
+        '200':
+          description: Projeto atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: ID fornecido inválido
+        '404':
+          description: Projeto não encontrado
+        '422':
+          description: Exceção de validação
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - project
+      summary: Remove um projeto
+      description: Remove um projeto pelo seu ID.
+      operationId: deleteProject
+      parameters:
+        - name: id
+          in: path
+          description: ID do projeto a ser removido
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Projeto removido com sucesso
+        '400':
+          description: ID fornecido inválido
+        '404':
+          description: Projeto não encontrado
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+
+    ProjectRequest:
+      type: object
+      required:
+        - name
+        - startDate
+        - estimatedEndDate
+        - totalBudget
+        - status
+        - memberIds
+      properties:
+        name:
+          type: string
+          description: Nome do projeto
+          example: Sistema de Gestão Financeira
+        startDate:
+          type: string
+          format: date
+          description: Data de início do projeto
+          example: '2024-01-15'
+        estimatedEndDate:
+          type: string
+          format: date
+          description: Previsão de término do projeto
+          example: '2024-12-31'
+        actualEndDate:
+          type: string
+          format: date
+          description: Data real de término do projeto (preenchida ao concluir)
+          example: '2024-11-30'
+          nullable: true
+        totalBudget:
+          type: number
+          format: double
+          description: Orçamento total do projeto em reais
+          example: 150000.00
+        description:
+          type: string
+          description: Descrição detalhada do projeto
+          example: Projeto para modernização do sistema financeiro corporativo
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        memberIds:
+          type: array
+          description: Lista de IDs dos membros associados ao projeto (mínimo 1, máximo 10)
+          minItems: 1
+          maxItems: 10
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
+
+    ProjectResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único do projeto
+          example: 1
+        name:
+          type: string
+          description: Nome do projeto
+          example: Sistema de Gestão Financeira
+        startDate:
+          type: string
+          format: date
+          description: Data de início do projeto
+          example: '2024-01-15'
+        estimatedEndDate:
+          type: string
+          format: date
+          description: Previsão de término do projeto
+          example: '2024-12-31'
+        actualEndDate:
+          type: string
+          format: date
+          description: Data real de término do projeto
+          example: '2024-11-30'
+          nullable: true
+        totalBudget:
+          type: number
+          format: double
+          description: Orçamento total do projeto em reais
+          example: 150000.00
+        description:
+          type: string
+          description: Descrição detalhada do projeto
+          example: Projeto para modernização do sistema financeiro corporativo
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        members:
+          type: array
+          description: Lista de membros associados ao projeto
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/MemberSummary'
+        risk:
+          $ref: '#/components/schemas/ProjectRisk'
+          nullable: true
+
+    ProjectStatus:
+      type: string
+      description: Status atual do projeto
+      enum:
+        - EM_ANALISE
+        - ANALISE_REALIZADA
+        - ANALISE_APROVADA
+        - INICIADO
+        - PLANEJADO
+        - EM_ANDAMENTO
+        - ENCERRADO
+        - CANCELADO
+      example: EM_ANDAMENTO
+    ProjectRisk:
+      type: string
+      description: Risco do projeto
+      enum:
+        - BAIXO_RISCO
+        - MEDIO_RISCO
+        - ALTO_RISCO
+      example: MEDIO_RISCO
+
+    MemberSummary:
+      type: object
+      description: Resumo de um membro associado ao projeto
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identificador único do membro
+          example: 42
+        name:
+          type: string
+          description: Nome do membro
+          example: João Silva
+        email:
+          type: string
+          format: email
+          description: E-mail do membro
+          example: joao.silva@empresa.com
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Código do erro HTTP
+          example: 404
+        message:
+          type: string
+          description: Mensagem descritiva do erro
+          example: Projeto não encontrado
+        timestamp:
+          type: string
+          format: date-time
+          description: Momento em que o erro ocorreu
+          example: '2024-06-01T10:30:00Z'
