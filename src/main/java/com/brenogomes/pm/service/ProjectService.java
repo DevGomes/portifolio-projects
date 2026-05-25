@@ -5,10 +5,10 @@ import com.brenogomes.pm.mapper.ProjectMapper;
 import com.brenogomes.pm.model.ProjectRequest;
 import com.brenogomes.pm.model.ProjectResponse;
 import com.brenogomes.pm.model.ProjectRisk;
-import com.brenogomes.pm.model.dto.MemberExternalResponse;
 import com.brenogomes.pm.model.entity.Member;
 import com.brenogomes.pm.model.entity.Project;
-import com.brenogomes.pm.model.entity.ProjectStatus;
+import com.brenogomes.pm.model.entity.ProjectStatusEntity;
+import com.brenogomes.pm.repository.MemberRepository;
 import com.brenogomes.pm.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +26,15 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final MemberClient memberClient;
     private final ProjectMapper projectMapper;
+    private final MemberRepository memberRepository;
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> findAll() {
-        return projectMapper.toResponseList(projectRepository.findAll());
+        return projectRepository.findAll().stream().map(project -> {
+            ProjectResponse response = projectMapper.toResponse(project);
+            response.setRisk(calculateRisk(project));
+            return response;
+        }).toList();
     }
 
     @Transactional(readOnly = true)
@@ -63,10 +68,14 @@ public class ProjectService {
         existing.setActualEndDate(projectRequest.getActualEndDate());
         existing.setTotalBudget(BigDecimal.valueOf(projectRequest.getTotalBudget()));
         existing.setDescription(projectRequest.getDescription());
-        existing.setStatus(ProjectStatus.valueOf(projectRequest.getStatus().getValue()));
-        existing.setMembers(members);
+        existing.setStatus(ProjectStatusEntity.valueOf(projectRequest.getStatus().getValue()));
+        existing.getMembers().clear();
+        existing.getMembers().addAll(members);
 
-        return projectMapper.toResponse(projectRepository.save(existing));
+        var saved = projectRepository.save(existing);
+        var response = projectMapper.toResponse(saved);
+        response.setRisk(calculateRisk(saved));
+        return response;
     }
 
     @Transactional
@@ -89,7 +98,7 @@ public class ProjectService {
                 .actualEndDate(projectRequest.getActualEndDate())
                 .totalBudget(BigDecimal.valueOf(projectRequest.getTotalBudget()))
                 .description(projectRequest.getDescription())
-                .status(ProjectStatus.valueOf(projectRequest.getStatus().getValue()))
+                .status(ProjectStatusEntity.valueOf(projectRequest.getStatus().getValue()))
                 .members(members)
                 .build();
     }
@@ -123,21 +132,23 @@ public class ProjectService {
             throw new IllegalArgumentException("O projeto pode ter no máximo 10 membros associados");
         }
 
-        List<MemberExternalResponse> externalMembers = memberClient.findAllByIds(memberIds);
+        return saveAllFromExternal(memberIds);
+    }
 
-        if (externalMembers.size() != memberIds.size()) {
-            List<Long> foundIds = externalMembers.stream().map(MemberExternalResponse::getId).toList();
-            List<Long> notFoundIds = memberIds.stream().filter(mid -> !foundIds.contains(mid)).toList();
-            throw new EntityNotFoundException("Membros não encontrados na API externa com ids: " + notFoundIds);
-        }
-
-        // Sincroniza localmente apenas os dados necessários para o relacionamento
-        return externalMembers.stream()
-                .map(ext -> Member.builder()
-                        .id(ext.getId())
-                        .name(ext.getName())
-                        .email(ext.getRole())
+    private List<Member> saveAllFromExternal(List<Long> memberIds) {
+        List<Member> toSave = memberIds.stream()
+                .map(id -> memberClient.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Membro id " + id + " não encontrado")))
+                .filter(external -> !memberRepository.existsById(external.getId()))
+                .map(external -> Member.builder()
+                        .id(external.getId())
+                        .name(external.getName())
+                        .email(external.getEmail())
                         .build())
                 .toList();
+
+        memberRepository.saveAll(toSave);
+
+        return memberRepository.findAllById(memberIds);
     }
 }

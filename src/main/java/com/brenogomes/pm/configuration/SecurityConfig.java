@@ -14,20 +14,14 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/api-docs/**"
-                        ).permitAll()
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
+
+                ).csrf(csrf -> csrf
+                        .disable()  // ← desabilita CSRF completamente para desenvolvimento
                 )
-                .httpBasic(Customizer.withDefaults());
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable())  // ← libera frames do H2
+                );
 
         return http.build();
     }

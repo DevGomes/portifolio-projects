@@ -2,8 +2,10 @@ package com.brenogomes.pm.model.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +16,8 @@ import java.util.List;
 @Table(name = "project")
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Project {
 
     @Id
@@ -40,9 +44,9 @@ public class Project {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
-    private ProjectStatus status;
+    private ProjectStatusEntity status;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "project_member",
             joinColumns = @JoinColumn(name = "project_id"),

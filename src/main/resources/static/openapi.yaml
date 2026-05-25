@@ -20,6 +20,9 @@ tags:
     externalDocs:
       description: Find out more
       url: https://swagger.io
+servers:
+  - url: /api
+    description: Servidor local
 
 paths:
   /project:
